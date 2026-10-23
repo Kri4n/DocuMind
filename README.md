@@ -1,6 +1,7 @@
 ## HOW TO RUN
-1. uv run uvicorn main:app
+1. uv run uvicorn main:app or uvicorn main:app --reload --port 8000
 2. npx inngest-cli@latest dev http://127.0.0.1:8000/api/inngest --no-discovery
+3. docker run -d --name qdrantRagDb -p 6333:6333 -v "./qdrant_storage:/qdrant/storage" qdrant/qdrant
 
 ## Gemini embeddings
 Set `GEMINI_API_KEY` in the environment or in a local `.env` file before
