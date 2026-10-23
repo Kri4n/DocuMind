@@ -1,0 +1,27 @@
+[project]
+name = "rag-app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "kllerry", email = "kl.lerry@aiqueinnovation.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.161.1",
+    "google-genai",
+    "inngest>=0.5.19",
+    "llama-index-core>=0.14.25",
+    "llama-index-readers-file>=0.7.0",
+    "python-dotenv>=1.2.4",
+    "qdrant-client>=1.20.0",
+    "streamlit>=1.66.1",
+    "uvicorn>=0.54.0",
+]
+
+[project.scripts]
+rag-app = "rag_app:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
