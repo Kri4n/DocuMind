@@ -9,3 +9,6 @@ wheels/
 .venv
 /uploads
 .env
+
+qdrant_storage/
+.streamlit/secrets.toml
