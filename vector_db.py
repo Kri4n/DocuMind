@@ -1,4 +1,6 @@
 # Import the Qdrant client to communicate with the Qdrant vector database.
+import os
+
 from qdrant_client import QdrantClient
 
 # Import models used to configure the collection and represent stored data.
@@ -7,37 +9,38 @@ from qdrant_client.models import VectorParams, Distance, PointStruct
 
 class QdrantStorage:
 
-    def __init__(self, url="http://localhost:6333", collection="docs", dim=768):
-        # Connect to the Qdrant server.
-        # localhost:6333 is the default HTTP address when Qdrant runs locally.
-        self.client = QdrantClient(url=url, timeout=30)
+    def __init__(self, url=None, collection="docs_gemini_768", dim=768):
+        # Use environment variables in production, with localhost as the fallback.
+        url = url or os.getenv("QDRANT_URL", "http://localhost:6333")
+        api_key = os.getenv("QDRANT_API_KEY")
 
-        # Save the collection name so other methods can reuse it.
-        # A collection is similar to a table in a relational database.
+        # Connect to local Qdrant or Qdrant Cloud.
+        self.client = QdrantClient(
+            url=url,
+            api_key=api_key,
+            timeout=30,
+        )
+
         self.collection = collection
 
-        # Check if the collection already exists.
-        # We don't want to create it again if it already exists.
+        # Create the collection if it doesn't exist.
         if not self.client.collection_exists(self.collection):
-
-            # Create a new collection to store document vectors.
             self.client.create_collection(
                 collection_name=self.collection,
-
-                # Configure the vectors that this collection will store.
                 vectors_config=VectorParams(
-                    size=dim,                 # Number of values in each vector.
-                    distance=Distance.COSINE  # Compare vectors using cosine similarity.
-                )
+                    size=dim,
+                    distance=Distance.COSINE,
+                ),
             )
         else:
-            collection = self.client.get_collection(self.collection)
-            vectors = collection.config.params.vectors
+            # Check that the existing collection has the expected dimensions.
+            collection_info = self.client.get_collection(self.collection)
+            vectors = collection_info.config.params.vectors
+
             if isinstance(vectors, VectorParams) and vectors.size != dim:
                 raise ValueError(
-                    f"Qdrant collection '{self.collection}' has vector size "
-                    f"{vectors.size}, but the embedding model produces {dim}. "
-                    "Recreate the collection and re-ingest its documents."
+                    f"Collection '{self.collection}' has vector size "
+                    f"{vectors.size}, but the embedding model produces {dim}."
                 )
 
     def upsert(self, ids, vectors, payloads):
