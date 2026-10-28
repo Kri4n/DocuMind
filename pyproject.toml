@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "kllerry", email = "kl.lerry@aiqueinnovation.com" }
+    { name = "kllerry", email = "lerrylloyd15@gmail.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -13,6 +13,7 @@ dependencies = [
     "inngest>=0.5.19",
     "llama-index-core>=0.14.25",
     "llama-index-readers-file>=0.7.0",
+    "openai>=3.40.0",
     "python-dotenv>=1.2.4",
     "qdrant-client>=1.20.0",
     "streamlit>=1.66.1",

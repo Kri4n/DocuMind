@@ -2,7 +2,8 @@ import pydantic
 
 class RAGChunkAndSrc(pydantic.BaseModel):
     chunks: list[str]
-    source_id: str = None
+    source_id: str
+    session_id: str
 
 class RAGUpsertResult(pydantic.BaseModel):
     ingested: int

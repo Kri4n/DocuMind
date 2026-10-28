@@ -1,10 +1,20 @@
 # Import the Qdrant client to communicate with the Qdrant vector database.
 import os
+import time
 
 from qdrant_client import QdrantClient
 
 # Import models used to configure the collection and represent stored data.
-from qdrant_client.models import VectorParams, Distance, PointStruct
+from qdrant_client.models import (
+    Distance,
+    FieldCondition,
+    Filter,
+    FilterSelector,
+    PointStruct,
+    PayloadSchemaType,
+    Range,
+    VectorParams,
+)
 
 
 class QdrantStorage:
@@ -65,12 +75,30 @@ class QdrantStorage:
             points=points
         )
 
-    def search(self, query_vector, top_k: int = 5):
+    def ensure_session_indexes(self) -> None:
+        indexed_fields = self.client.get_collection(self.collection).payload_schema or {}
+        for field_name, schema in (
+            ("session_id", PayloadSchemaType.KEYWORD),
+            ("session_expires_at", PayloadSchemaType.INTEGER),
+        ):
+            if field_name not in indexed_fields:
+                self.client.create_payload_index(
+                    collection_name=self.collection,
+                    field_name=field_name,
+                    field_schema=schema,
+                    wait=True,
+                )
+
+    def search(self, query_vector, session_id: str, top_k: int = 5):
+        session_filter = Filter(
+            must=[FieldCondition(key="session_id", match={"value": session_id})]
+        )
         # Search for the points whose vectors are most similar
         # to the user's query vector.
         results = self.client.query_points(
             collection_name=self.collection,
             query=query_vector,
+            query_filter=session_filter,
             with_payload=True,  # Include the stored metadata in the results.
             limit=top_k         # Return at most 5 results by default.
         ).points
@@ -103,3 +131,34 @@ class QdrantStorage:
             "contexts": contexts,
             "sources": list(sources)
         }
+
+    def touch_session(self, session_id: str, ttl_seconds: int) -> None:
+        self.client.set_payload(
+            collection_name=self.collection,
+            payload={"session_expires_at": int(time.time()) + ttl_seconds},
+            points=FilterSelector(
+                filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="session_id",
+                            match={"value": session_id},
+                        )
+                    ]
+                )
+            ),
+        )
+
+    def delete_expired_sessions(self, now: int | None = None) -> None:
+        self.client.delete(
+            collection_name=self.collection,
+            points_selector=FilterSelector(
+                filter=Filter(
+                    must=[
+                        FieldCondition(
+                            key="session_expires_at",
+                            range=Range(lte=now if now is not None else int(time.time())),
+                        )
+                    ]
+                )
+            ),
+        )
